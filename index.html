@@ -156,6 +156,584 @@ body::before{content:'';position:fixed;inset:0;
     ・受け取り方を決めるのは、いつもご本人です。
   </div>
 
+  <div class="axis-box">
+    <h4>この診断でわかること</h4>
+    <div class="axis-list">
+      <div class="axis-row"><span class="axis-tag" style="background:rgba(94,203,138,.18);color:#5ECB8A">01</span><span>あなたと話すとき、相手がくつろいでいるか、気を遣っているか</span></div>
+      <div class="axis-row"><span class="axis-tag" style="background:rgba(94,203,138,.18);color:#5ECB8A">02</span><span>その原因が「受け止め方」と「自分の見せ方」のどちらにあるか</span></div>
+      <div class="axis-row"><span class="axis-tag" style="background:rgba(94,203,138,.18);color:#5ECB8A">03</span><span>6つの要素のうち、いま情報が出ていないのはどこか</span></div>
+    </div>
+  </div>
+
+  <div class="axis-box">
+    <h4>受け取れるもの</h4>
+    <div class="axis-list">
+      <div class="axis-row"><span class="axis-tag" style="background:rgba(232,160,74,.18);color:#E8A04A">結果</span><span>54通りのうち、あなたに当てはまるタイプ1つ</span></div>
+      <div class="axis-row"><span class="axis-tag" style="background:rgba(232,160,74,.18);color:#E8A04A">行動</span><span>今日から試せる具体的な手順3つ（いちばん落ちている1か所だけ）</span></div>
+      <div class="axis-row"><span class="axis-tag" style="background:rgba(232,160,74,.18);color:#E8A04A">場面</span><span>職場／家族・パートナー／友人・初対面 の3場面での見え方</span></div>
+    </div>
+  </div>
+
+  <div class="axis-box">
+    <h4>その結果、こうなります</h4>
+    <div class="axis-list">
+      <div class="axis-row"><span class="axis-tag" style="background:rgba(255,217,160,.18);color:#FFD9A0">→</span><span>会話が続かない理由を「性格」ではなく「行動」に置き換えられます。行動なら変えられます</span></div>
+      <div class="axis-row"><span class="axis-tag" style="background:rgba(255,217,160,.18);color:#FFD9A0">→</span><span>直す場所が1か所に絞れるので、何から手をつけるか迷わなくなります</span></div>
+      <div class="axis-row"><span class="axis-tag" style="background:rgba(255,217,160,.18);color:#FFD9A0">→</span><span>相手が言葉を選んでいる、早めに切り上げた — そうしたサインの意味が読めるようになります</span></div>
+    </div>
+  </div>
+
+  <div class="intro-body">
+    <p>直近3ヶ月の、仕事や日常での会話を思い浮かべながら答えてください。特定の一人ではなく、ふだんの自分として答えてください。</p>
+    <p>選ぶと自動で次の設問に進みます。「← 前の質問」で戻れます。</p>
+  </div>
+
+  <button class="btn-start" onclick="startQuiz()">診断をはじめる</button>
+</section>
+
+<!-- QUIZ -->
+<section id="quizPage" style="display:none">
+  <div class="quiz-wrap">
+    <div class="prog-wrap">
+      <div class="prog-top">
+        <span class="axis-pill" id="axisPill"></span>
+        <span class="q-cnt" id="qCnt"></span>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+      <div class="basis-note" id="basisNote"></div>
+    </div>
+    <div class="q-card"><div class="q-text" id="qText"></div></div>
+    <div class="opts" id="opts"></div>
+    <div class="nav-row"><button class="btn-prev" id="btnPrev" onclick="prevQ()">← 前の質問</button></div>
+  </div>
+</section>
+
+<!-- LOADING -->
+<section id="loadingPage" style="display:none">
+  <div class="loading">
+    <div class="spinner"></div>
+    <p>2軸と6要素を計算しています…</p>
+  </div>
+</section>
+
+<!-- RESULT -->
+<section id="resultPage" style="display:none">
+  <div class="result-wrap" id="resultBody"></div>
+</section>
+
+</div>
+<script>
+// ══ 設問 ══ rev:true = 逆転項目
+// ax: R=受容 / O=開放   sub: 下位要素（この診断での内訳）
+const QS=[
+ {id:1, ax:'R', sub:'U', basis:'知覚された応答性（理解）', rev:false, q:'相手の話を聞いたあと、「つまり〇〇ということ？」と確認することがある'},
+ {id:2, ax:'O', sub:'J', basis:'自己開示', rev:false, q:'自分の近況や考えを、聞かれる前に自分から話すことがある'},
+ {id:3, ax:'R', sub:'V', basis:'非評価的傾聴（逆転）', rev:true, q:'相手の話を聞きながら、頭の中で「それは違う」と判断していることがある'},
+ {id:4, ax:'O', sub:'H', basis:'感情表出性', rev:false, q:'面白い話を聞いたとき、声や表情にはっきり反応が出る'},
+ {id:5, ax:'R', sub:'K', basis:'対人的配慮', rev:false, q:'相手が言いよどんだとき、急かさずに待つほうだ'},
+ {id:6, ax:'O', sub:'B', basis:'会話のターンテイキング（逆転）', rev:true, q:'会話のあと、「自分ばかり聞き役だった」と感じることが多い'},
+ {id:7, ax:'R', sub:'U', basis:'応答性（確認行動）', rev:false, q:'相手の話に、内容を掘り下げる質問を返すことが多い'},
+ {id:8, ax:'O', sub:'J', basis:'自己開示（逆転）', rev:true, q:'自分の弱みや失敗の話は、あまりしないほうだ'},
+ {id:9, ax:'R', sub:'V', basis:'承認的応答', rev:false, q:'相手の考えに賛成できないときも、まず最後まで聞く'},
+ {id:10,ax:'O', sub:'H', basis:'非言語的即時性（逆転）', rev:true, q:'「今の話、聞いてた？」と確認されたことがある'},
+ {id:11,ax:'R', sub:'K', basis:'対人的配慮（話量の調整）', rev:false, q:'相手が話し足りなさそうなとき、こちらから話題を戻すことがある'},
+ {id:12,ax:'O', sub:'B', basis:'会話の相互性', rev:false, q:'自分が話す量と相手が話す量は、だいたい同じくらいだと思う'},
+ {id:13,ax:'R', sub:'U', basis:'応答性（逆転）', rev:true, q:'相手が話している途中で、次に自分が何を言うかを考えていることが多い'},
+ {id:14,ax:'O', sub:'J', basis:'自己開示の相互性', rev:false, q:'相手が個人的な話をしてくれたら、自分も同じくらいの話を返す'},
+ {id:15,ax:'R', sub:'V', basis:'非評価的傾聴', rev:false, q:'相談されたとき、すぐ解決策を出さずに気持ちを先に受け止める'},
+ {id:16,ax:'O', sub:'H', basis:'感情表出性（逆転）', rev:true, q:'「何を考えているかわからない」と言われたことがある'},
+ {id:17,ax:'R', sub:'K', basis:'対人的配慮（逆転）', rev:true, q:'自分といるとき、相手が言葉を選んでいるように見えることがある'},
+ {id:18,ax:'O', sub:'B', basis:'沈黙への対処', rev:false, q:'会話が途切れても、気まずくならずにいられる'},
+ {id:19,ax:'R', sub:'V', basis:'承認的応答（逆転）', rev:true, q:'相手の話に、つい「でも」「いや」から返してしまうことがある'},
+ {id:20,ax:'O', sub:'B', basis:'会話の運び', rev:false, q:'相手が話し終わったあと、一拍おいてから話しはじめるほうだ'}
+];
+
+const OPTS=['まったく当てはまらない','あまり当てはまらない','どちらとも言えない','やや当てはまる','とても当てはまる'];
+
+const AX={
+  R:{name:'受容', color:'#5ECB8A', bg:'rgba(94,203,138,.18)'},
+  O:{name:'開放', color:'#E8A04A', bg:'rgba(232,160,74,.18)'}
+};
+
+// 下位要素（この診断での内訳。確立された下位尺度ではありません）
+const SUB={
+  U:{ax:'R', name:'理解', desc:'わかろうとしていることが伝わるか。確認する、掘り下げる、話の途中で自分の番を考えない。'},
+  V:{ax:'R', name:'承認', desc:'否定から入らないか。最後まで聞く、すぐ解決策を出さない、「でも」で返さない。'},
+  K:{ax:'R', name:'配慮', desc:'相手の状態を見ているか。言いよどみを待つ、話し足りなさに気づく、相手に言葉を選ばせない。'},
+  J:{ax:'O', name:'開示', desc:'自分の側を出しているか。近況、考え、弱みや失敗、相手の開示への返し。'},
+  H:{ax:'O', name:'反応', desc:'反応が見えるか。表情、声の動き、聞いていることが相手に届いているか。'},
+  B:{ax:'O', name:'配分', desc:'会話の持ち方。話す量のバランス、間の取り方、沈黙への耐性。'}
+};
+
+// ══ 9タイプ（受容3帯 × 開放3帯）══
+const TYPES={
+ HH:{name:'話しやすい人', color:'#8FE3B0',
+  one:'受け止める力も、自分を見せる力も、行動として出ています。相手が気を遣う理由がほとんどない状態です。',
+  guess:'「この人には話せる。……というか、話しすぎたかも」',
+  guessWhy:'受容と開放が揃うと、相手は警戒を解きます。よくある副作用は、相手が予定より多く話してしまい、あとで少し気恥ずかしくなることです。悪いことではありません。',
+  scene:['なぜか、初対面でも重めの相談をされることがある','「話してるとラクだった」と言われたことがある','聞きすぎて、自分が疲れている日がある']},
+ HM:{name:'受け止め上手な人', color:'#7FD9A8',
+  one:'受け止める力は十分にあります。自分を出す側が、場面によってムラがあります。',
+  guess:'「話しやすい人。この人のことは、まだあまり知らないけど」',
+  guessWhy:'受容が高いと相手は安心して話します。ただ、あなたの情報が少ないままだと、関係は「相談する側／される側」で固定されやすくなります。',
+  scene:['聞き役に回ることが多い','相手のことは詳しいのに、自分の話はしていない','関係が一方通行になっている感覚がときどきある']},
+ HL:{name:'聞いてくれるけれど、読めない人', color:'#5ECB8A',
+  one:'受け止める力は高いのに、あなた自身が見えません。相手は話せますが、話したあとに不安が残ります。',
+  guess:'「ちゃんと聞いてくれた。……でも、どう思われたんだろう」',
+  guessWhy:'受け止めてもらえた実感と、相手の内心が読めない不安は同時に起こります。相手が気を遣うのは会話中ではなく、会話の「あと」です。',
+  scene:['相談はされるが、その後の距離が縮まらない','「何を考えてるかわからない」と言われたことがある','自分の話をするタイミングを、いつも逃している']},
+ MH:{name:'にぎやかだけど、相談はされにくい人', color:'#F0C080',
+  one:'自分を出す力は十分です。受け止める側が、まだ相手に届き切っていません。',
+  guess:'「一緒にいて楽しい。重い話は、たぶんこの人じゃない」',
+  guessWhy:'開放が高いと場は明るくなりますが、相手は「自分の話に戻ってくるか」を無意識に測っています。戻る保証がないと、深い話は預けられません。',
+  scene:['場を盛り上げる役になることが多い','相談されるより、相談する側になりがち','人は集まるのに、深い関係は少ないと感じる']},
+ MM:{name:'当たり障りのない人', color:'#93a3bd',
+  one:'2軸とも中間です。気まずくはならないかわりに、くつろぐところまでは行っていません。',
+  guess:'「感じは悪くない。特に話すこともないけど」',
+  guessWhy:'会話は、どちらかが先に踏み込んで初めて深くなります。両方が中間だと、どちらも踏み込まないまま終わります。',
+  scene:['会話は成立するが、内容を覚えていない','雑談が天気と仕事の話で終わる','嫌われてはいないが、誘われてもいない']},
+ ML:{name:'静かで、掴みどころのない人', color:'#A8B8CC',
+  one:'受け止める力は中間、自分を出す側はほとんど出ていません。相手は手がかりのないまま話すことになります。',
+  guess:'「話しかけてよかったのかな」',
+  guessWhy:'反応が見えないと、相手は自分の話が届いているかを確認できません。確認できないまま話し続けるのは、かなりの労力です。',
+  scene:['会話が思ったより早く終わる','相手のほうが先に話題を探してくれている','人見知りというより、反応の出し方がわからない']},
+ LH:{name:'話は面白いが、話しづらい人', color:'#E8A04A',
+  one:'自分を出す力は高いのに、受け止める側が届いていません。相手は聞き役に固定されます。',
+  guess:'「面白い人。でも、自分の話はしにくいな」',
+  guessWhy:'受容が低いと、相手は「話しても戻ってこない」と学習します。悪気がなくても、会話の取り分が偏ると、相手はだんだん出さなくなります。',
+  scene:['気づくと自分ばかり話している','相手の話を、自分の似た話で返してしまう','「聞いてる？」と言われたことがある']},
+ LM:{name:'会話が続かない人', color:'#B4A07B',
+  one:'受け止める力も出す力も、決め手になるほどは届いていません。会話を続ける労力が、相手側に寄っています。',
+  guess:'「何を話せばいいんだろう」',
+  guessWhy:'質問も返らず反応も見えないと、相手は次の話題を一人で探すことになります。これが「気を遣う」の正体です。',
+  scene:['沈黙が生まれると、埋めるのは相手のほうだ','質問されて答えて、そこで終わる','会話のあと、どっと疲れることがある']},
+ LL:{name:'気を遣わせてしまう人', color:'#C98A5E',
+  one:'受容も開放も、低いのではなく「出ていない」状態です。相手は会話の労力をほぼ一人で負っています。',
+  guess:'「……この人、話しかけないほうがよかったかな」',
+  guessWhy:'これは性格の評価ではありません。受け止めた合図も、自分の側の情報も外に出ていないため、相手は反応のない相手に向かって話し続けることになります。負担が大きいので、相手は自然に短く切り上げます。ひとつ出すだけで、はっきり変わります。',
+  scene:['自分から話しかけられることが少ない','会話が数往復で終わる','悪気はないのに、なぜか距離を置かれる']}
+};
+
+// ══ 強み（最も高い下位要素で出し分け）══
+const STRENGTH={
+ U:'あなたの強みは<strong>理解</strong>です。確認し、掘り下げ、相手が話している間に自分の番のことを考えない。「ちゃんとわかろうとしてくれている」という感覚は、会話のなかで最も贅沢なものです。',
+ V:'あなたの強みは<strong>承認</strong>です。否定から入らず、最後まで聞き、すぐ解決策を出さない。相手は結論ではなく「まず受け取ってもらえた」という体験を持ち帰ります。これができる人は多くありません。',
+ K:'あなたの強みは<strong>配慮</strong>です。言いよどみを待ち、話し足りなさに気づく。相手は自分でも気づかないうちに、言葉を選ばずに済んでいます。気を遣わせないとは、まさにこの状態です。',
+ J:'あなたの強みは<strong>開示</strong>です。自分の近況も弱みも出せる。相手はあなたを探らずに済み、同じ高さの話を返しやすくなります。関係が一方通行にならないのは、この力のおかげです。',
+ H:'あなたの強みは<strong>反応</strong>です。表情と声が動く。相手は自分の話が届いたことを、言葉で確認しなくてもわかります。これは話し手にとって、想像以上に大きな安心です。',
+ B:'あなたの強みは<strong>配分</strong>です。話す量が偏らず、間が取れて、沈黙も怖くない。会話のリズムを支えているのはあなたの側で、相手はそれに気づかないまま楽をしています。'
+};
+
+// ══ 処方（最も低い下位要素で出し分け）══
+const RX={
+ U:{label:'理解', steps:[
+   ['相手が話している間、自分の番を考えない','次に何を言うかを考えている時間、人の話は半分しか入っていません。相手にもそれは伝わります。まず「考えない」と決めるだけで変わります。'],
+   ['「つまり〇〇ってこと？」を一度だけ入れる','言い換えて返すと、相手は「伝わった」と確認できます。正確でなくてもかまいません。確認しようとした事実のほうが届きます。'],
+   ['質問をもう一段だけ深くする','「それでどうなったんですか」の次に「そのとき、どう思いました？」。一段深い質問は、事実ではなく相手そのものへの関心として受け取られます。']]},
+ V:{label:'承認', steps:[
+   ['「でも」を「そうなんですね」に置き換える','内容に反対でも、まず受け取る言葉を一つ置きます。反論は、そのあとでも間に合います。順番だけの問題です。'],
+   ['解決策を出す前に、一往復我慢する','相談の多くは、答えではなく受け取ってもらうために持ち込まれます。先に解決策を出すと、相手は話を打ち切られたと感じます。'],
+   ['最後まで聞き切る','途中でわかっても、最後まで聞きます。「わかってるよ」という省略は、時間の節約にはなりますが、関係の節約にはなりません。']]},
+ K:{label:'配慮', steps:[
+   ['言いよどみを3秒だけ待つ','埋めたくなる沈黙を、3秒だけ我慢します。相手はそこで、いちばん言いたかったことを出すことがあります。'],
+   ['相手の話を途中で自分の話に変えない','「わかる、私も〜」は共感のつもりでも、話題の所有権を移してしまいます。返すのは、相手の話が終わってからで十分です。'],
+   ['相手が言葉を選んでいないか見る','言い直しが多い、語尾が濁る。それは相手が気を遣っているサインです。気づけた時点で、半分は解決しています。']]},
+ J:{label:'開示', steps:[
+   ['近況を一つだけ自分から出す','聞かれる前に話す、を一回だけ。「最近〇〇にはまってて」で十分です。相手は返す手がかりを得られます。'],
+   ['小さな失敗を一つ話す','弱みの開示は、相手に「ここでは完璧でなくていい」と伝えます。重い話は要りません。道に迷った話で十分です。'],
+   ['相手が開示したら、同じ高さで返す','個人的な話をしてもらったら、同じくらいの話を返します。返ってこないと、相手は出しすぎたと感じて引っ込めます。']]},
+ H:{label:'反応', steps:[
+   ['うなずきを一段大きくする','自分では大げさに感じるくらいで、相手にちょうど届きます。聞いているという情報は、出さなければ存在しないのと同じです。'],
+   ['驚いたときは、声に出す','「へえ」「そうなんだ」を我慢しない。反応が音になると、相手は安心して話を続けられます。'],
+   ['最初の3秒だけ、口角を上げる','ずっと笑顔でいる必要はありません。会話のはじまりだけ意識すると、そのあとの真顔の解釈が変わります。']]},
+ B:{label:'配分', steps:[
+   ['話す量を、相手と同じくらいに寄せる','多すぎても少なすぎても、相手は調整の労力を負います。半分ずつを目安にするだけで、会話は急に楽になります。'],
+   ['相手が話し終わってから、一拍おく','食い気味に返すと、相手は「まだ話したかった」を飲み込みます。一拍は譲る合図として伝わります。'],
+   ['沈黙を埋めようとしない','沈黙が気まずいのは、たいてい自分の側だけです。埋めずにいると、相手が次の話を出してくれることがあります。']]}
+};
+
+// ══ 場面別の見え方 ══
+const SCENES=[
+ {name:'職場・仕事の会話', map:{
+   HH:'相談も報告も集まってきます。抱えすぎないよう、聞く時間に区切りを持つと長続きします。',
+   HM:'「この人に言えば聞いてもらえる」と思われています。自分の意見も置くと、対等な関係になります。',
+   HL:'相談はされるのに、あなたが何を考えているかは知られていません。一言の感想が効きます。',
+   MH:'雑談は盛り上がりますが、込み入った相談は他の人に行きがちです。質問を一つ返すだけで変わります。',
+   MM:'必要な情報は回りますが、それ以上は動きません。可もなく不可もない状態です。',
+   ML:'業務連絡だけの関係になりやすい。反応を一段大きくするところから始まります。',
+   LH:'話は通っているのに、相手が言い出せていないことがあります。「他には？」の一言が効きます。',
+   LM:'会話が短く終わるため、情報が入ってこないことがあります。損をしているのは実は自分の側です。',
+   LL:'相手が用件だけを短く伝えて去っていきます。悪意ではなく、負担を避けているだけです。'}},
+ {name:'家族・パートナーとの会話', map:{
+   HH:'相手は安心して本音を出せます。受け止めすぎて自分が疲れていないか、ときどき点検してください。',
+   HM:'よく聞いてくれる存在です。あなたの弱音も出せると、相手はもっと楽になります。',
+   HL:'相手は話せるのに、あなたの気持ちがわからず不安になっています。言葉にしないと伝わりません。',
+   MH:'楽しい時間は作れますが、相手が言いにくいことを抱えている可能性があります。',
+   MM:'会話はあるのに、深いところに入らない。慣れが理由のことが多い関係です。',
+   ML:'相手が話しかけるのをためらっている場面があります。反応が最初の一手です。',
+   LH:'相手は聞き役に固定されています。長く続くと、言うのをやめてしまうことがあります。',
+   LM:'必要な話しかしなくなっている可能性があります。ここは意識して戻せる場所です。',
+   LL:'相手が遠慮しているサインが出ていないか、一度だけ振り返ってみてください。'}},
+ {name:'友人・はじめて会う人との会話', map:{
+   HH:'初対面でも早く打ち解けます。あなた側の消耗にだけ注意してください。',
+   HM:'感じのいい人として記憶されます。自分の話を一つ出すと、次につながります。',
+   HL:'よく聞いてくれる人、で止まりがちです。相手はもう一歩踏み込んでいいか迷っています。',
+   MH:'すぐ仲良くなれるタイプです。相手の話に戻る回数を増やすと、関係が続きます。',
+   MM:'その場は問題なく終わりますが、連絡先が増えないことが多い場面です。',
+   ML:'会話の主導権が完全に相手側にあります。質問を一つ返すだけで印象が変わります。',
+   LH:'面白い人だと思われますが、相手は自分の話ができないまま帰ります。',
+   LM:'沈黙を相手が埋めています。次に誘われにくくなるのは、ここが原因のことがあります。',
+   LL:'相手が早めに会話を切り上げます。あなたが嫌われたのではなく、負担が大きいだけです。'}}
+];
+
+// ══ state ══
+let cur=0, ans={};
+function show(id){document.getElementById(id).style.display='block';}
+function hide(id){document.getElementById(id).style.display='none';}
+function startQuiz(){ cur=0; ans={}; hide('topPage'); show('quizPage'); renderQ(); window.scrollTo(0,0); }
+
+function renderQ(){
+  const q=QS[cur], a=AX[q.ax];
+  const pill=document.getElementById('axisPill');
+  pill.textContent=a.name+' / '+SUB[q.sub].name; pill.style.background=a.bg; pill.style.color=a.color;
+  document.getElementById('qCnt').textContent=(cur+1)+' / '+QS.length;
+  document.getElementById('progFill').style.width=Math.round((cur/QS.length)*100)+'%';
+  document.getElementById('basisNote').textContent='参照した概念: '+q.basis;
+  document.getElementById('qText').textContent=q.q;
+  const box=document.getElementById('opts'); box.innerHTML='';
+  OPTS.forEach(function(o,i){
+    const b=document.createElement('button');
+    b.className='opt-btn'+(ans[q.id]===i+1?' selected':'');
+    b.textContent=(i+1)+'. '+o;
+    b.onclick=function(){ selectAns(i+1); };
+    box.appendChild(b);
+  });
+  document.getElementById('btnPrev').style.visibility = cur>0 ? 'visible' : 'hidden';
+}
+function selectAns(v){
+  const q=QS[cur]; ans[q.id]=v; renderQ();
+  if(cur===QS.length-1){
+    setTimeout(function(){ hide('quizPage'); show('loadingPage'); setTimeout(showResult,1600); },380);
+  } else {
+    setTimeout(function(){ cur++; renderQ(); window.scrollTo(0,0); },300);
+  }
+}
+function prevQ(){ if(cur>0){ cur--; renderQ(); window.scrollTo(0,0); } }
+
+// ══ 採点 ══
+function calcScores(a){
+  const raw={};
+  QS.forEach(function(q){ const v=a[q.id]||3; raw[q.id]= q.rev ? (6-v) : v; });
+  const aS={R:0,O:0}, aN={R:0,O:0}, sS={}, sN={};
+  Object.keys(SUB).forEach(function(k){ sS[k]=0; sN[k]=0; });
+  QS.forEach(function(q){ aS[q.ax]+=raw[q.id]; aN[q.ax]++; sS[q.sub]+=raw[q.id]; sN[q.sub]++; });
+  const pct={}, sub={};
+  ['R','O'].forEach(function(k){ pct[k]=Math.round(((aS[k]-aN[k])/(aN[k]*4))*100); });
+  Object.keys(SUB).forEach(function(k){ sub[k]=Math.round(((sS[k]-sN[k])/(sN[k]*4))*100); });
+  return {pct:pct, sub:sub};
+}
+
+function band(v){ return v>=65 ? 'H' : (v>=40 ? 'M' : 'L'); }
+function getKey(pct){ return band(pct.R)+band(pct.O); }
+
+const SUB_ORDER=['U','V','K','J','H','B'];
+function lowestSub(sub){
+  let k=SUB_ORDER[0];
+  SUB_ORDER.forEach(function(x){ if(sub[x] < sub[k]) k=x; });
+  return k;
+}
+function highestSub(sub){
+  let k=SUB_ORDER[0];
+  SUB_ORDER.forEach(function(x){ if(sub[x] > sub[k]) k=x; });
+  return k;
+}
+
+// ══ 信頼性 ══
+function calcReliability(a){
+  const vals=QS.map(function(q){ return a[q.id]||3; });
+  const same=vals.filter(function(v){ return v===vals[0]; }).length;
+  const mid=vals.filter(function(v){ return v===3; }).length;
+  const norm=QS.filter(function(q){return !q.rev;}).map(function(q){return a[q.id]||3;});
+  const revs=QS.filter(function(q){return q.rev;}).map(function(q){return a[q.id]||3;});
+  const avgN=norm.reduce(function(s,v){return s+v;},0)/norm.length;
+  const avgR=revs.reduce(function(s,v){return s+v;},0)/revs.length;
+  const contradicted = (avgN>=4.2 && avgR>=4.2) || (avgN<=1.8 && avgR<=1.8);
+  const allSameNonMid = same>=QS.length-2 && vals[0]!==3;
+  if(allSameNonMid || contradicted){
+    return {label:'要確認', color:'#E8A04A', note:'通常の設問と逆転の設問で、答えの向きが揃いすぎています。読み飛ばしがあったかもしれません。もう一度ゆっくり答えると、結果の精度が上がります。'};
+  }
+  if(mid>=12){ return {label:'参考程度', color:'#8B9BB4', note:'「どちらとも言えない」が多いため、軸の差が出にくくなっています。迷ったときは、直近3ヶ月の実際の会話を思い出して選ぶと輪郭が出ます。'}; }
+  if(mid>=7){ return {label:'中程度', color:'#4AA8E8', note:'いくつか判断に迷った項目がありますが、全体の傾向は読み取れます。'}; }
+  return {label:'高い', color:'#5ECB8A', note:'回答に一貫性があり、信頼できる結果です。'};
+}
+
+// ══ 結果描画 ══
+function showResult(){
+  hide('loadingPage'); show('resultPage');
+  const sc=calcScores(ans);
+  const key=getKey(sc.pct);
+  const t=TYPES[key];
+  let low=lowestSub(sc.sub), high=highestSub(sc.sub);
+  const flat = sc.sub[low]===sc.sub[high];
+  const rel=calcReliability(ans);
+  const r=sc.pct.R, o=sc.pct.O;
+
+  let h='';
+  h+='<div class="result-header">'
+   + '<div class="result-label">診断結果 &nbsp;|&nbsp; '+key+'-'+low+'</div>'
+   + '<div class="result-type" style="color:'+t.color+'">'+t.name+'</div>'
+   + '<div class="result-one">'+t.one+'</div>'
+   + '</div>';
+
+  h+='<div class="sec" style="border-color:rgba(94,203,138,.28)">'
+   + '<div class="sec-label">話し終わったあと、相手はたぶんこう思っています</div>'
+   + '<div class="quote">'+t.guess+'</div>'
+   + '<div class="sec-body" style="margin-top:.9rem">'+t.guessWhy+'</div>'
+   + '<div class="micro">※ あなたのスコアから逆算した「そう感じられやすい」という目安です。実際に言われた言葉ではありません。</div>'
+   + '</div>';
+
+  h+='<div class="map-wrap">'
+   + '<div class="map-axis-y">↑ 開放（自分が読み取れるか）</div>'
+   + '<div class="map">'
+   + '<div class="map-line" style="left:40%;top:0;width:1px;height:100%"></div>'
+   + '<div class="map-line" style="left:65%;top:0;width:1px;height:100%"></div>'
+   + '<div class="map-line" style="left:0;bottom:40%;width:100%;height:1px"></div>'
+   + '<div class="map-line" style="left:0;bottom:65%;width:100%;height:1px"></div>'
+   + '<div class="map-q" style="left:0;width:40%;top:0;height:35%">話は面白いが<br>話しづらい人</div>'
+   + '<div class="map-q" style="left:65%;width:35%;top:0;height:35%">話しやすい人</div>'
+   + '<div class="map-q" style="left:40%;width:25%;top:35%;height:30%">当たり<br>障りの<br>ない人</div>'
+   + '<div class="map-q" style="left:0;width:40%;bottom:0;height:40%">気を遣わせて<br>しまう人</div>'
+   + '<div class="map-q" style="left:65%;width:35%;bottom:0;height:40%">聞いてくれるが<br>読めない人</div>'
+   + '<div class="map-dot" style="left:'+(5+r*0.9).toFixed(1)+'%;bottom:'+(5+o*0.9).toFixed(1)+'%"></div>'
+   + '</div>'
+   + '<div class="map-axis-x">受容（相手を受け止めているか） →</div>'
+   + '<div class="micro" style="text-align:center">線は「低・中・高」の境目（40点と65点）。●が、いまのあなたの位置です。</div>'
+   + '</div>';
+
+  h+='<div class="score-grid">'
+   + '<div class="score-card"><div class="score-name">受容</div>'
+   + '<div class="score-val" style="color:#5ECB8A">'+r+'<span class="score-unit">/100</span></div>'
+   + '<div class="score-bar"><div class="score-fill" style="background:#5ECB8A;width:'+r+'%"></div></div>'
+   + '<div class="score-note">'+(r>=65?'受け止めた合図が、行動として十分に出ています。':r>=40?'出てはいますが、場面によってムラがあります。':'相手は「話しても戻ってこない」と感じている可能性があります。')+'</div></div>'
+   + '<div class="score-card"><div class="score-name">開放</div>'
+   + '<div class="score-val" style="color:#E8A04A">'+o+'<span class="score-unit">/100</span></div>'
+   + '<div class="score-bar"><div class="score-fill" style="background:#E8A04A;width:'+o+'%"></div></div>'
+   + '<div class="score-note">'+(o>=65?'あなたが読み取れるので、相手は探らずに済んでいます。':o>=40?'出てはいますが、場面によってムラがあります。':'手がかりが少なく、相手は探りながら話すことになります。')+'</div></div>'
+   + '</div>';
+
+  h+='<div class="sec"><div class="sec-label">6つの内訳 — どこで落ちているか</div><div class="sub-list">';
+  SUB_ORDER.forEach(function(k){
+    const s=SUB[k], v=sc.sub[k], col=AX[s.ax].color;
+    const mark = flat ? '' : (k===low ? '<span class="sub-flag low">いちばん低い</span>' : (k===high ? '<span class="sub-flag high">いちばん高い</span>' : ''));
+    h+='<div class="sub-row">'
+     + '<div class="sub-head"><span class="sub-name"><span class="sub-ax" style="color:'+col+'">'+AX[s.ax].name+'</span>'+s.name+'</span>'
+     + '<span class="sub-val" style="color:'+col+'">'+v+'</span></div>'
+     + '<div class="sub-bar"><div class="sub-fill" style="background:'+col+';width:'+v+'%"></div></div>'
+     + '<div class="sub-desc">'+s.desc+mark+'</div>'
+     + '</div>';
+  });
+  h+='</div><div class="micro">※ この6つの内訳は、20問を意味のまとまりで分けた<strong>この診断独自の区分</strong>です。心理学で確立された下位尺度ではありません。2軸（受容・開放）のほうが、研究の裏づけがある部分です。</div></div>';
+
+  h+='<div class="rel-box"><div class="rel-top">'
+   + '<span class="rel-label">回答の信頼性</span>'
+   + '<span class="rel-badge" style="background:'+rel.color+'22;color:'+rel.color+'">'+rel.label+'</span>'
+   + '</div><div class="rel-note">'+rel.note+'</div></div>';
+
+  h+='<div class="sec"><div class="sec-label">こんな場面、心当たりはありませんか</div><div class="scene">';
+  t.scene.forEach(function(s){ h+='<div class="scene-row"><span class="scene-mark">●</span><span>'+s+'</span></div>'; });
+  h+='</div></div>';
+
+  h+='<div class="sec"><div class="sec-label">場面別の見え方</div><div class="step">';
+  SCENES.forEach(function(sc2){
+    h+='<div class="step-row"><div class="step-num" style="background:rgba(232,160,74,.15);color:#E8A04A">◇</div>'
+     + '<div class="step-txt"><b>'+sc2.name+'</b>'+sc2.map[key]+'</div></div>';
+  });
+  h+='</div></div>';
+
+  h+='<div class="sec"><div class="sec-label">いま効いているもの</div><div class="sec-body">'
+   + (flat ? '6つの要素がすべて同じ高さでした。突出も欠けもない状態です。まずはどれか一つを選んで伸ばすと、会話の感触が変わります。' : STRENGTH[high])
+   + '</div></div>';
+
+  const rx=RX[low];
+  h+='<div class="sec" style="border-color:rgba(94,203,138,.28)"><div class="sec-label">次の一歩 — 直す場所は「'+rx.label+'」ひとつです</div>'
+   + '<div class="sec-body" style="margin-bottom:1.1rem">'+(flat?'6つとも同じ高さでしたので、まずは<strong>'+rx.label+'</strong>から動かしてみてください。':'6つのうち、いちばん出ていないのが<strong>'+rx.label+'</strong>（'+sc.sub[low]+'点）でした。')+'全部を変える必要はありません。ここだけ動かせば、2軸のスコアは連動して上がります。</div>'
+   + '<div class="step">';
+  rx.steps.forEach(function(s,i){ h+='<div class="step-row"><div class="step-num" style="background:rgba(94,203,138,.15);color:#5ECB8A">'+(i+1)+'</div><div class="step-txt"><b>'+s[0]+'</b>'+s[1]+'</div></div>'; });
+  h+='</div></div>';
+
+  h+='<div class="src"><div class="sec-label">この診断の土台</div>'
+   + '<p><strong style="color:#c8d4e6">分野：社会心理学・対人コミュニケーション</strong><br>'
+   + '受容の軸は、Reis・Shaver らが整理した<strong style="color:#c8d4e6">知覚された応答性（Perceived Responsiveness）</strong>の考え方に基づいています。人が相手に心を開くかどうかは、相手が「理解してくれた・受け入れてくれた・気にかけてくれた」と感じられるかで決まる、という枠組みです。</p>'
+   + '<p style="margin-top:.9rem">開放の軸は、<strong style="color:#c8d4e6">自己開示の相互性</strong>と<strong style="color:#c8d4e6">非言語的即時性・感情表出性</strong>の研究群を参照しています。関係が深まるには自己開示が釣り合っていることが必要で、反応が外に出ているほど相手は安心して話せる、という報告が重ねられてきた領域です。</p>'
+   + '<p style="margin-top:.9rem">個々の設問は、これらの概念を<strong style="color:#c8d4e6">参照して作成した独自項目</strong>です。既存尺度の項目をそのまま使ったものではありません。</p>'
+   + '<p style="margin-top:.9rem">結果は傾向の可視化であり、人格の評価でも臨床的な診断でもありません。数字そのものより、どこで相手に労力を渡しているかを見るための目安としてお使いください。</p></div>';
+
+  h+='<button class="btn-retry" onclick="location.reload()">← もう一度やってみる</button>';
+
+  document.getElementById('resultBody').innerHTML=h;
+  window.scrollTo(0,0);
+}
+</script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>話しやすい人か、気を遣わせる人か診断 | ジブンwoカシカ</title>
+<meta name="description" content="あなたと話すとき、相手はくつろいでいる？ それとも気を遣っている？ 心理学の「知覚された応答性」をもとに、受容×開放の2軸で20問・3分で可視化します。"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#05080f;--surface:#0a0f1a;--surface2:#101725;
+  --border:rgba(120,180,255,0.09);--border2:rgba(120,180,255,0.18);
+  --text:#e6edf8;--muted:#5a6a85;--faint:#141c2b;
+  --warm:#E8734A;--warm2:#B94E2C;--cool:#4AA8E8;--cool2:#2C72B9;--cream:#FFD9A0;
+}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-serif;-webkit-text-size-adjust:100%}
+body::before{content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 50% 40% at 78% 12%,rgba(232,115,74,0.07),transparent),
+             radial-gradient(ellipse 45% 50% at 12% 88%,rgba(74,168,232,0.06),transparent);
+  pointer-events:none;z-index:0}
+.app{max-width:600px;margin:0 auto;padding:0 1.2rem 5rem;position:relative;z-index:1}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}}
+.fade-in{animation:fadeUp .5s cubic-bezier(.22,.68,0,1.1) forwards}
+
+/* TOP */
+.top{padding:3.2rem 0 2rem}
+.top-eye{font-size:.64rem;letter-spacing:.24em;color:var(--muted);margin-bottom:1rem;text-transform:uppercase;text-align:center}
+.top h1{font-size:1.5rem;font-weight:700;line-height:1.55;color:#fff;margin-bottom:.7rem;text-align:center;letter-spacing:.02em}
+.top-sub{font-size:.66rem;letter-spacing:.16em;color:var(--muted);margin-bottom:2.2rem;text-align:center}
+.intro-body{font-size:.87rem;line-height:2.05;color:#93a3bd;margin-bottom:1.5rem}
+.intro-body p{margin-bottom:.95rem}
+.intro-body em{color:var(--warm);font-style:normal;font-weight:500}
+.hook{border-left:2px solid var(--warm2);padding-left:1.2rem;margin:1.3rem 0;font-size:.87rem;line-height:1.95;color:#b3c0d6}
+.axis-box{background:var(--surface);border:.5px solid var(--border);border-radius:12px;padding:1.2rem;margin-bottom:1.4rem}
+.axis-box h4{font-size:.67rem;color:var(--muted);letter-spacing:.12em;margin-bottom:.9rem}
+.axis-list{display:flex;flex-direction:column;gap:.6rem}
+.axis-row{display:flex;align-items:flex-start;gap:.8rem;font-size:.8rem;line-height:1.75;color:#8494ae}
+.axis-tag{font-size:.65rem;font-weight:700;padding:2px 9px;border-radius:20px;flex-shrink:0;margin-top:2px;white-space:nowrap}
+.warn-box{background:rgba(232,115,74,.05);border:.5px solid rgba(232,115,74,.18);border-radius:10px;padding:.9rem 1.1rem;margin-bottom:1.5rem;font-size:.78rem;color:#8494ae;line-height:1.85}
+.btn-start{width:100%;padding:1.05rem;font-size:.98rem;font-weight:700;letter-spacing:.08em;border-radius:12px;border:none;background:linear-gradient(135deg,var(--warm),var(--warm2));color:#fff;cursor:pointer;transition:.25s;font-family:'Noto Sans JP',sans-serif}
+.btn-start:hover{transform:translateY(-2px);box-shadow:0 10px 32px rgba(232,115,74,.3)}
+
+/* QUIZ */
+.quiz-wrap{padding-top:2.2rem}
+.prog-wrap{margin-bottom:1.6rem}
+.prog-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:.55rem}
+.axis-pill{font-size:.66rem;font-weight:700;padding:3px 11px;border-radius:20px;letter-spacing:.06em}
+.q-cnt{font-size:.7rem;color:var(--muted)}
+.prog-bar{height:2.5px;background:var(--faint);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--warm2),var(--warm),var(--cream));border-radius:2px;transition:width .4s ease}
+.basis-note{font-size:.63rem;color:var(--muted);text-align:right;margin-top:.45rem;letter-spacing:.05em}
+.q-card{background:var(--surface);border:.5px solid var(--border);border-radius:14px;padding:1.5rem 1.4rem;margin-bottom:1.2rem}
+.q-text{font-size:.97rem;line-height:1.85;color:#fff;font-weight:500}
+.opts{display:flex;flex-direction:column;gap:.5rem}
+.opt-btn{width:100%;padding:.82rem 1rem;font-size:.85rem;font-family:'Noto Sans JP',sans-serif;border:.5px solid var(--border);border-radius:9px;background:var(--surface);color:#8494ae;cursor:pointer;text-align:left;transition:.18s}
+.opt-btn:hover{border-color:var(--border2);color:var(--text);background:var(--surface2)}
+.opt-btn.selected{border-color:var(--warm);color:#fff;background:rgba(232,115,74,.12)}
+.nav-row{display:flex;justify-content:flex-start;margin-top:1.2rem}
+.btn-prev{padding:.6rem 1.1rem;font-size:.76rem;font-family:'Noto Sans JP',sans-serif;border:.5px solid var(--border);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer}
+.btn-prev:hover{color:var(--text);border-color:var(--border2)}
+
+/* LOADING */
+.loading{padding:6rem 0;text-align:center}
+.spinner{width:34px;height:34px;border:2px solid var(--faint);border-top-color:var(--warm);border-radius:50%;margin:0 auto 1.4rem;animation:spin .9s linear infinite}
+.loading p{font-size:.8rem;color:var(--muted);letter-spacing:.1em;animation:pulse 1.6s ease-in-out infinite}
+
+/* RESULT */
+.result-wrap{padding-top:2.2rem}
+.result-header{text-align:center;padding:2rem 1.2rem 2.2rem;background:var(--surface);border:.5px solid var(--border);border-radius:16px;margin-bottom:1.2rem}
+.result-label{font-size:.63rem;letter-spacing:.24em;color:var(--muted);margin-bottom:1rem}
+.result-type{font-size:1.45rem;font-weight:700;line-height:1.5;margin-bottom:.5rem}
+.result-one{font-size:.85rem;color:#93a3bd;line-height:1.9;margin-top:.9rem}
+
+/* MAP */
+.map-wrap{background:var(--surface);border:.5px solid var(--border);border-radius:14px;padding:1.4rem 1.2rem 1.1rem;margin-bottom:1.2rem}
+.map{position:relative;width:100%;max-width:300px;aspect-ratio:1;margin:0 auto;border-radius:10px;background:var(--faint);overflow:hidden}
+.map-q{position:absolute;display:flex;align-items:center;justify-content:center;font-size:.58rem;color:#44536b;text-align:center;line-height:1.45;padding:3px;pointer-events:none}
+.map-line{position:absolute;background:rgba(120,180,255,.13)}
+.map-dot{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--warm);box-shadow:0 0 0 4px rgba(232,115,74,.22);transform:translate(-50%,50%);transition:.6s cubic-bezier(.22,.68,0,1.1)}
+.map-axis-x,.map-axis-y{font-size:.62rem;color:var(--muted);text-align:center;letter-spacing:.08em}
+.map-axis-x{margin-top:.7rem}
+.map-axis-y{margin-bottom:.6rem}
+
+/* SCORES */
+.score-grid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:1.2rem}
+.score-card{background:var(--surface);border:.5px solid var(--border);border-radius:12px;padding:1.1rem}
+.score-name{font-size:.72rem;color:var(--muted);margin-bottom:.5rem;letter-spacing:.06em}
+.score-val{font-size:1.7rem;font-weight:300;line-height:1}
+.score-unit{font-size:.7rem;color:var(--muted);margin-left:.2rem}
+.score-bar{height:3px;background:var(--faint);border-radius:2px;overflow:hidden;margin-top:.7rem}
+.score-fill{height:100%;border-radius:2px;transition:width .8s ease}
+.score-note{font-size:.68rem;color:var(--muted);margin-top:.55rem;line-height:1.6}
+
+/* SECTIONS */
+.sec{background:var(--surface);border:.5px solid var(--border);border-radius:14px;padding:1.4rem;margin-bottom:1rem}
+.sec-label{font-size:.63rem;letter-spacing:.2em;color:var(--muted);margin-bottom:.9rem}
+.sec-body{font-size:.86rem;line-height:2.05;color:#93a3bd}
+.sec-body strong{color:var(--text);font-weight:500}
+.scene{display:flex;flex-direction:column;gap:.7rem}
+.scene-row{display:flex;gap:.75rem;align-items:flex-start;font-size:.84rem;line-height:1.8;color:#93a3bd}
+.scene-mark{color:var(--warm);flex-shrink:0;font-size:.7rem;margin-top:.45rem}
+.step{counter-reset:s;display:flex;flex-direction:column;gap:1rem}
+.step-row{display:flex;gap:.9rem;align-items:flex-start}
+.step-num{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:rgba(232,115,74,.15);color:var(--warm);font-size:.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:2px}
+.step-txt{font-size:.85rem;line-height:1.9;color:#93a3bd}
+.step-txt b{display:block;color:var(--text);font-weight:500;margin-bottom:.15rem}
+
+/* RELIABILITY */
+.rel-box{background:var(--surface);border:.5px solid var(--border);border-radius:12px;padding:1.1rem 1.2rem;margin-bottom:1rem}
+.rel-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem}
+.rel-label{font-size:.66rem;letter-spacing:.14em;color:var(--muted)}
+.rel-badge{font-size:.72rem;font-weight:700;padding:3px 12px;border-radius:20px}
+.rel-note{font-size:.72rem;line-height:1.8;color:var(--muted)}
+
+.src{background:var(--surface);border:.5px solid var(--border);border-radius:12px;padding:1.2rem;margin-bottom:1rem}
+.src p{font-size:.75rem;color:var(--muted);line-height:1.95}
+.btn-retry{width:100%;padding:.9rem;font-size:.82rem;font-family:'Noto Sans JP',sans-serif;border:.5px solid var(--border);border-radius:10px;background:transparent;color:var(--muted);cursor:pointer;margin-top:.4rem}
+.btn-retry:hover{color:var(--text);border-color:var(--border2)}
+.quote{font-size:1.02rem;line-height:1.85;color:#fff;font-weight:500;padding:1rem 1.1rem;background:rgba(232,115,74,.08);border-radius:10px;border-left:2px solid var(--warm)}
+.micro{font-size:.68rem;line-height:1.75;color:var(--muted);margin-top:.9rem}
+.micro strong{color:#93a3bd;font-weight:500}
+.sub-list{display:flex;flex-direction:column;gap:1.05rem}
+.sub-row{}
+.sub-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.45rem}
+.sub-name{font-size:.86rem;color:var(--text);font-weight:500}
+.sub-ax{font-size:.64rem;letter-spacing:.06em;margin-right:.55rem;font-weight:700}
+.sub-val{font-size:1.05rem;font-weight:300}
+.sub-bar{height:3px;background:var(--faint);border-radius:2px;overflow:hidden}
+.sub-fill{height:100%;border-radius:2px;transition:width .8s ease}
+.sub-desc{font-size:.72rem;color:var(--muted);line-height:1.7;margin-top:.45rem}
+.sub-flag{display:inline-block;font-size:.63rem;font-weight:700;padding:1px 8px;border-radius:20px;margin-left:.5rem;white-space:nowrap}
+.sub-flag.low{background:rgba(232,115,74,.18);color:#E8734A}
+.sub-flag.high{background:rgba(94,203,138,.16);color:#5ECB8A}
+@media(max-width:400px){.score-grid{grid-template-columns:1fr}.top h1{font-size:1.32rem}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- TOP -->
+<section id="topPage" class="fade-in">
+  <div class="top">
+    <div class="top-eye">AI × PSYCHOLOGY</div>
+    <h1>話しやすい人か、<br>気を遣わせる人か診断</h1>
+    <div class="top-sub">受容 × 開放 ／ 全20問 ／ 約3分</div>
+  </div>
+
+  <div class="warn-box">
+    <strong style="color:#c8d4e6">はじめる前に、3つだけ。</strong><br>
+    ・答えるのはご自身の主観なので、結果には幅が出ます。<br>
+    ・これは「あなたがいい人かどうか」ではなく「相手が話しやすいと感じやすいか」の目安です。<br>
+    ・受け取り方を決めるのは、いつもご本人です。
+  </div>
+
   <div class="intro-body">
     <p>直近3ヶ月の、仕事や日常での会話を思い浮かべながら答えてください。特定の一人ではなく、ふだんの自分として答えてください。</p>
     <p>選ぶと自動で次の設問に進みます。「← 前の質問」で戻れます。</p>
